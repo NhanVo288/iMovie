@@ -16,18 +16,19 @@
   // "placement": {
   // 	"mode": "smart",
   // },
-  "routes": [
-    {
-      "pattern": "imovie.space",
-      "zone_name": "imovie.space",
-      "custom_domain": true,
-    },
-    {
-      "pattern": "www.imovie.space",
-      "zone_name": "imovie.space",
-      "custom_domain": true,
-    },
-  ],
+  // "routes": [
+  //   {
+  //     "pattern": "imovie.space",
+  //     "zone_name": "imovie.space",
+  //     "custom_domain": true,
+  //   },
+  //   {
+  //     "pattern": "www.imovie.space",
+  //     "zone_name": "imovie.space",
+  //     "custom_domain": true,
+  //   },
+  // ],
+  "workers_dev": true,
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
