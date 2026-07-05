@@ -1,0 +1,49 @@
+{
+  "account_id": "80a8e9cafbb36e0f2b3b3c5fb03b0c55",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "movies-streaming-platform",
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "preview_urls": false,
+  // "placement": {
+  // 	"mode": "smart",
+  // },
+  "routes": [
+    {
+      "pattern": "iMovie.space",
+      "zone_name": "iMovie.space",
+      "custom_domain": true,
+    },
+    {
+      "pattern": "www.iMovie.space",
+      "zone_name": "iMovie.space",
+      "custom_domain": true,
+    },
+  ],
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "movies-streaming-platform",
+    },
+  ],
+  // Preserve vars configured in the Cloudflare Dashboard on deploy
+  "keep_vars": true,
+  "vars": {
+    "ENVIRONMENT": "production",
+    "NODE_ENV": "production",
+  },
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "cd422b9f51424c32b976ee260b967be3",
+    },
+  ],
+}

@@ -1,0 +1,457 @@
+'use client'
+
+import * as React from 'react'
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { searchMovieAction } from '@/actions/search'
+import { Film, Home, Search, Tv } from 'lucide-react'
+import { useDebouncedCallback } from 'use-debounce'
+
+import { MediaType } from '@/types/media'
+import { siteConfig } from '@/config/site'
+import { SEARCH_DEBOUNCE } from '@/lib/constants'
+import { cn, getThumbBackdropURL, getThumbPosterURL } from '@/lib/utils'
+import { useCMDKListener } from '@/hooks/use-cmdk-listener'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import {
+  CommandDialog,
+  CommandDialogProps,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Icons } from '@/components/icons'
+
+import { Badge } from './ui/badge'
+
+type SearchStatus = 'idle' | 'loading' | 'empty' | 'results'
+
+const compactNumber = new Intl.NumberFormat('en', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
+
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+const HighlightedText = React.memo(function HighlightedText({
+  text,
+  query,
+}: {
+  text: string
+  query: string
+}) {
+  if (!text) return null
+  if (!query) return <>{text}</>
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(query)})`, 'i'))
+  const lowered = query.toLowerCase()
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === lowered ? (
+          <mark
+            key={i}
+            className="bg-primary/25 text-foreground rounded-sm px-0.5"
+          >
+            {part}
+          </mark>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  )
+})
+
+const mediaHref = (movie: MediaType) =>
+  movie?.media_type === 'tv' ? `/tv-shows/${movie.id}` : `/movies/${movie.id}`
+
+export function CommandMenu({ ...props }: CommandDialogProps) {
+  const { open, setOpen, runCommand, isLoading, setIsLoading } =
+    useCMDKListener()
+  const [data, setData] = React.useState<MediaType[]>([])
+  const [query, setQuery] = React.useState('')
+  const [hasSearched, setHasSearched] = React.useState(false)
+  const router = useRouter()
+
+  // Sequence id to drop stale responses when the user types quickly.
+  const requestSeqRef = React.useRef(0)
+  // Tracks last result count so skeletons match list height between queries.
+  const [skeletonCount, setSkeletonCount] = React.useState(4)
+
+  const trimmedQuery = query.trim()
+
+  const runSearch = React.useCallback(
+    async (value: string) => {
+      const trimmed = value.trim()
+      if (!trimmed) return
+      const seq = ++requestSeqRef.current
+      try {
+        const res = await searchMovieAction({ query: trimmed })
+        if (seq !== requestSeqRef.current) return
+        const results = res?.results ?? []
+        setData(results)
+        setHasSearched(true)
+        const renderable = results.filter(
+          (m) =>
+            m?.media_type !== ('person' as MediaType['media_type'])
+        ).length
+        if (renderable > 0) {
+          setSkeletonCount(Math.max(3, Math.min(6, renderable)))
+        }
+      } catch {
+        if (seq !== requestSeqRef.current) return
+        setData([])
+        setHasSearched(true)
+      } finally {
+        if (seq === requestSeqRef.current) {
+          setIsLoading(false)
+        }
+      }
+    },
+    [setIsLoading]
+  )
+
+  const debouncedRunSearch = useDebouncedCallback(runSearch, SEARCH_DEBOUNCE)
+
+  const handleValueChange = (value: string) => {
+    setQuery(value)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      debouncedRunSearch.cancel()
+      requestSeqRef.current++
+      setData([])
+      setHasSearched(false)
+      setIsLoading(false)
+      return
+    }
+    setIsLoading(true)
+    debouncedRunSearch(trimmed)
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next)
+    if (!next) {
+      debouncedRunSearch.cancel()
+      requestSeqRef.current++
+      setQuery('')
+      setData([])
+      setHasSearched(false)
+      setIsLoading(false)
+    }
+  }
+
+  const visibleResults = React.useMemo(
+    () =>
+      (data ?? [])
+        .filter((movie) => movie?.media_type !== ('person' as MediaType['media_type']))
+        .sort(
+          (a, b) => (b?.vote_average ?? 0) - (a?.vote_average ?? 0)
+        ),
+    [data]
+  )
+
+  const status: SearchStatus = !trimmedQuery
+    ? 'idle'
+    : isLoading
+      ? 'loading'
+      : hasSearched && visibleResults.length === 0
+        ? 'empty'
+        : 'results'
+
+  const resultsHeading =
+    status === 'results' && visibleResults.length > 0
+      ? `Search Movies & Series · ${visibleResults.length} ${
+          visibleResults.length === 1 ? 'result' : 'results'
+        }`
+      : 'Search Movies & Series...'
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        className={cn(
+          'text-muted-foreground relative w-full justify-start text-sm sm:pr-12 md:w-40 lg:w-64'
+        )}
+        onClick={() => setOpen(true)}
+        {...props}
+      >
+        <span className="inline-flex">Search...</span>
+        <kbd className="bg-muted pointer-events-none absolute top-2 right-2 hidden h-5 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none sm:flex">
+          <span className="text-xs">⌘</span>K
+        </kbd>
+      </Button>
+      <CommandDialog
+        open={open}
+        onOpenChange={handleOpenChange}
+        shouldFilter={false}
+      >
+        <CommandInput
+          placeholder="Type a command or search..."
+          value={query}
+          onValueChange={handleValueChange}
+          isLoading={isLoading}
+        />
+        <CommandList>
+          <CommandGroup heading={resultsHeading}>
+            {status === 'idle' && (
+              <div
+                role="status"
+                className="text-muted-foreground flex items-center justify-center gap-2 py-6 text-sm"
+              >
+                <Search className="size-4" aria-hidden />
+                <p>Start typing to search movies & series…</p>
+              </div>
+            )}
+
+            {status === 'loading' && (
+              <div
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+                className="flex flex-col gap-1 py-1"
+              >
+                <span className="sr-only">Searching…</span>
+                {Array.from({ length: skeletonCount }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 px-2 py-2"
+                  >
+                    <Skeleton className="aspect-video h-[54px] shrink-0 rounded-md" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <Skeleton className="h-3.5 w-1/2" />
+                      <Skeleton className="h-3 w-1/3" />
+                      <Skeleton className="h-3 w-3/4" />
+                    </div>
+                    <Skeleton className="h-5 w-12 shrink-0 rounded-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {status === 'empty' && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex flex-col items-center justify-center gap-1 px-4 py-6 text-center"
+              >
+                <Icons.search
+                  className="text-muted-foreground size-5"
+                  aria-hidden
+                />
+                <p className="text-sm font-medium">No results found</p>
+                <p className="text-muted-foreground w-full text-xs break-words">
+                  Nothing matched “{trimmedQuery}”. Try a different title.
+                </p>
+              </div>
+            )}
+
+            {status === 'results' &&
+              visibleResults.map((movie) => {
+                const href = mediaHref(movie)
+                const year = movie?.release_date
+                  ? movie.release_date.split('-')[0]
+                  : null
+                const rating = movie?.vote_average
+                  ? movie.vote_average.toFixed(1)
+                  : null
+                const votes = movie?.vote_count
+                  ? compactNumber.format(movie.vote_count)
+                  : null
+                const showOriginal =
+                  !!movie?.original_title &&
+                  movie.original_title.toLowerCase() !==
+                    (movie?.title ?? '').toLowerCase()
+
+                return (
+                  <CommandItem
+                    key={`${movie.media_type ?? 'movie'}-${movie.id}`}
+                    value={`${movie.id}-${movie.title}`}
+                    className="group/command-item hover:bg-primary-foreground/50 cursor-pointer transition-colors duration-200"
+                    onSelect={() => {
+                      runCommand(() => router.push(href))
+                    }}
+                    onMouseEnter={() => router.prefetch(href)}
+                    onFocus={() => router.prefetch(href)}
+                  >
+                    <div className="flex w-full min-w-0 flex-nowrap items-center gap-3 overflow-hidden">
+                      {movie?.backdrop_path ? (
+                        <div className="bg-muted ring-border/60 relative aspect-video h-[54px] shrink-0 overflow-hidden rounded-md shadow-sm ring-1">
+                          <Image
+                            src={getThumbBackdropURL(movie.backdrop_path)}
+                            alt={movie?.title ?? ''}
+                            fill
+                            sizes="96px"
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      ) : movie?.poster_path ? (
+                        <div className="bg-muted ring-border/60 relative aspect-video h-[54px] shrink-0 overflow-hidden rounded-md shadow-sm ring-1">
+                          <Image
+                            src={getThumbPosterURL(movie.poster_path)}
+                            alt={movie?.title ?? ''}
+                            fill
+                            sizes="96px"
+                            className="object-cover object-top"
+                            unoptimized
+                          />
+                        </div>
+                      ) : (
+                        <div className="bg-muted text-muted-foreground ring-border/60 flex aspect-video h-[54px] shrink-0 items-center justify-center rounded-md shadow-sm ring-1">
+                          {movie?.media_type === 'tv' ? (
+                            <Tv className="size-4" aria-hidden />
+                          ) : (
+                            <Film className="size-4" aria-hidden />
+                          )}
+                        </div>
+                      )}
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <p className="truncate text-sm font-medium">
+                          <HighlightedText
+                            text={movie?.title ?? ''}
+                            query={trimmedQuery}
+                          />
+                        </p>
+                        {(year || rating || showOriginal) && (
+                          <p className="text-muted-foreground truncate text-xs">
+                            {showOriginal && (
+                              <span className="italic">
+                                {movie.original_title}
+                              </span>
+                            )}
+                            {showOriginal && (year || rating) && ' • '}
+                            {year}
+                            {year && rating && ' • '}
+                            {rating && (
+                              <>
+                                {rating}★
+                                {votes && (
+                                  <span className="text-muted-foreground/80">
+                                    {' '}
+                                    · {votes}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </p>
+                        )}
+                        {movie?.overview && (
+                          <p className="text-muted-foreground/90 line-clamp-2 text-xs leading-snug">
+                            {movie.overview}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {movie?.media_type && (
+                          <Badge
+                            variant="outline"
+                            className="bg-primary-foreground/70 text-xs capitalize"
+                          >
+                            {movie.media_type}
+                          </Badge>
+                        )}
+                        {movie?.adult && (
+                          <Badge
+                            variant="outline"
+                            className="border-destructive/40 text-destructive text-[10px]"
+                          >
+                            18+
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CommandItem>
+                )
+              })}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Shortcuts...">
+            <CommandItem
+              className="cursor-pointer"
+              onSelect={() => runCommand(() => router.push(`/movies`))}
+            >
+              <Icons.playIcon className="mr-2 size-4" />
+              Movies
+            </CommandItem>
+            <CommandItem
+              className="cursor-pointer"
+              onSelect={() => runCommand(() => router.push(`/tv-shows`))}
+            >
+              <Tv className="mr-2 size-4" />
+              Series
+            </CommandItem>
+            <CommandItem
+              className="cursor-pointer"
+              onSelect={() => runCommand(() => router.push(`/`))}
+            >
+              <Home className="mr-2 size-4" />
+              Home
+            </CommandItem>
+            <CommandItem
+              className="cursor-pointer"
+              onSelect={() =>
+                runCommand(() =>
+                  window.open(siteConfig.author.website, '_blank')
+                )
+              }
+            >
+              <div className="flex items-center gap-4">
+                <Avatar>
+                  <AvatarImage src="/hacker.png" />
+                  <AvatarFallback>G</AvatarFallback>
+                </Avatar>
+                Portfolio
+              </div>
+            </CommandItem>
+            <CommandItem
+              className="cursor-pointer"
+              onSelect={() =>
+                runCommand(() =>
+                  window.open(`https://github.com/NhanVo288`, '_blank')
+                )
+              }
+            >
+              <div className="flex items-center gap-4">
+                <Icons.buyMeACoffee className="size-5" />
+                Buy me a coffee
+              </div>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+        </CommandList>
+        <div
+          className="text-muted-foreground bg-muted/30 flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px]"
+          aria-hidden
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <kbd className="bg-background rounded border px-1 font-mono">
+                ↑↓
+              </kbd>
+              navigate
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="bg-background rounded border px-1 font-mono">
+                ↵
+              </kbd>
+              open
+            </span>
+          </div>
+          <span className="flex items-center gap-1">
+            <kbd className="bg-background rounded border px-1 font-mono">
+              esc
+            </kbd>
+            close
+          </span>
+        </div>
+      </CommandDialog>
+    </>
+  )
+}
