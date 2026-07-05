@@ -18,13 +18,13 @@
   // },
   "routes": [
     {
-      "pattern": "iMovie.tv",
-      "zone_name": "iMovie.tv",
+      "pattern": "imovie.space",
+      "zone_name": "imovie.space",
       "custom_domain": true,
     },
     {
-      "pattern": "www.iMovie.tv",
-      "zone_name": "iMovie.tv",
+      "pattern": "www.imovie.space",
+      "zone_name": "imovie.space",
       "custom_domain": true,
     },
   ],
