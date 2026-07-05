@@ -148,8 +148,6 @@ export const siteConfig = {
     'JavaScript',
     'Node.js',
     'NhanVo',
-    'Gado',
-    'Gado Mohamed',
     'React Developer',
     'React Engineer',
     'React.js',
