@@ -29,19 +29,10 @@ export const fetchClient = {
         }
       )
 
-      const body = await res.text()
-
-      if (!res.ok) {
-        console.log('TMDB Status:', res.status)
-        console.log('TMDB Body:', body)
-        console.log(
-          'TMDB Token:',
-          process.env.TMDB_HEADER_KEY ? 'EXISTS' : 'MISSING'
-        )
-        throw new Error(`TMDB ${res.status}`)
+        if (!res.ok) {
+        throw new Error(`TMDB API error: ${res.status}`)
       }
-
-      return JSON.parse(body)
+      return await res.json()
     } catch (error: any) {
       console.error(error)
       throw error
