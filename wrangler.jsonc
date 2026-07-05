@@ -18,13 +18,13 @@
   // },
   "routes": [
     {
-      "pattern": "iMovie.space",
-      "zone_name": "iMovie.space",
+      "pattern": "iMovie.tv",
+      "zone_name": "iMovie.tv",
       "custom_domain": true,
     },
     {
-      "pattern": "www.iMovie.space",
-      "zone_name": "iMovie.space",
+      "pattern": "www.iMovie.tv",
+      "zone_name": "iMovie.tv",
       "custom_domain": true,
     },
   ],
@@ -43,7 +43,7 @@
   "kv_namespaces": [
     {
       "binding": "NEXT_INC_CACHE_KV",
-      "id": "cd422b9f51424c32b976ee260b967be3",
+      "id": "90438b00a4064232a6ee9c10abf62c85",
     },
   ],
 }
