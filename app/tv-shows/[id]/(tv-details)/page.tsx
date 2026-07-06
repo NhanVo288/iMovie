@@ -2,10 +2,7 @@ import React from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import {
-  getAllTimeTopRatedSeries,
-  getLatestTrendingSeries,
   getSeriesDetailsById,
-  getPopularSeries,
   populateSeriesDetailsPageData,
 } from '@/services/series'
 
@@ -20,40 +17,7 @@ import {
 import { SeriesDetailsContent } from '@/components/series/details-content'
 import { SeriesDetailsHero } from '@/components/series/details-hero'
 
-// 24h: series metadata is essentially static and CI redeploys twice daily
-// (repopulating the cache with fresh data), so a shorter window would only
-// churn KV writes against the free-plan 1k/day cap for no freshness gain.
-export const revalidate = 86400
-
-// Pre-render the most popular series pages at build time so they ship as static
-// assets (served by the ASSETS binding — zero Worker CPU, even on an edge-cache
-// miss). `dynamicParams` stays true, so any non-prebuilt id still renders on
-// demand and gets edge-cached. Fail-soft to [] so a TMDB hiccup at build never
-// breaks the deploy (empty list = current all-dynamic behaviour, no regression).
-export const dynamicParams = true
-
-export async function generateStaticParams() {
-  try {
-     // Prerender the head of the traffic distribution: popular (4 pages),
-    // all-time top rated, and today's trending. Deduped → ~100 hottest titles
-    // baked into the cache at build so they never cold-render at runtime.
-    const responses = await Promise.all([
-      getPopularSeries({ page: 1 }),
-      getPopularSeries({ page: 2 }),
-      getPopularSeries({ page: 3 }),
-      getPopularSeries({ page: 4 }),
-      getAllTimeTopRatedSeries({ page: 1 }),
-      getLatestTrendingSeries({ page: 1 }),
-    ])
-    const ids = new Set<string>()
-    for (const res of responses) {
-      for (const series of res?.results ?? []) ids.add(String(series.id))
-    }
-    return Array.from(ids, (id) => ({ id }))
-  } catch {
-    return []
-  }
-}
+export const revalidate = 28800
 
 export async function generateMetadata(
   props: PageDetailsProps

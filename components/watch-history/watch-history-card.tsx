@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { CalendarDays, Film, Tv } from 'lucide-react'
 
-import { trackWatchHistoryItemClicked } from '@/lib/analytics'
 import { dateFormatter, getPosterImageURL } from '@/lib/utils'
 import { WatchedItem } from '@/hooks/use-local-storage'
 import { Badge } from '@/components/ui/badge'
@@ -29,17 +28,7 @@ export function WatchedItemCard({ item }: WatchedItemCardProps) {
   }
 
   return (
-    <Link
-      href={handleRedirect()}
-      className="h-fit"
-      onClick={() =>
-        trackWatchHistoryItemClicked({
-          media_id: item.id,
-          media_type: item.type === 'movie' ? 'movie' : 'tv',
-          title: item.title,
-        })
-      }
-    >
+    <Link href={handleRedirect()} className="h-fit">
       <motion.div initial="rest" whileHover="hover" animate="rest">
         <motion.div variants={CARD_VARIANT}>
           <Card className="overflow-hidden">

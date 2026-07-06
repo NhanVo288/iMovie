@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { trackHeroWatchClicked } from '@/lib/analytics'
+
 import { ItemType } from '@/types/movie-result'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
@@ -40,12 +40,6 @@ export const AnimatedWatchButton = ({
     >
       <Link
         href={href}
-        onClick={() =>
-          trackHeroWatchClicked({
-            media_id: movieId,
-            media_type: mediaType === 'tv' ? 'tv' : 'movie',
-          })
-        }
         className={cn(
           'mt-6',
           buttonVariants({
