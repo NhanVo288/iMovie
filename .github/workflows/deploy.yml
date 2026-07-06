@@ -2,8 +2,8 @@ name: Deploy
 
 on:
   schedule:
-    - cron: '0 2 * * *' # 04:00 Egypt time (UTC+2) — morning refresh before the day's peak traffic
-    - cron: '0 18 * * *' # 20:00 Egypt time (UTC+2) — night refresh
+    - cron: '0 2 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
