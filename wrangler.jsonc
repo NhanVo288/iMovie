@@ -47,10 +47,14 @@
     "ENVIRONMENT": "production",
     "NODE_ENV": "production",
   },
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "NEXT_INC_CACHE_KV",
-  //     "id": "90438b00a4064232a6ee9c10abf62c85",
-  //   },
-  // ],
+  // Incremental cache store for OpenNext. KV errors (free-plan 1k writes/day,
+  // 100k reads/day) are swallowed by the override and by scripts/cf-deploy.mjs,
+  // so hitting a limit degrades to live rendering / stale content — never a
+  // crash or a failed deploy. See open-next.config.ts.
+  "kv_namespaces": [
+    {
+      "binding": "NEXT_INC_CACHE_KV",
+      "id": "90438b00a4064232a6ee9c10abf62c85",
+    },
+  ],
 }
