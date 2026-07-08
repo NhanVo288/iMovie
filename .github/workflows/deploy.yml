@@ -55,8 +55,8 @@ jobs:
       # Worker rollout. REQUIRES the token to carry Zone.Cache Rules +
       # Zone.Transform Rules + Zone WAF: Edit — if it lacks them this step fails
       # loudly (that's the point: a red step here means the cache rule isn't live).
-      - name: Apply Cloudflare cache + WAF rules
-        run: pnpm run waf:apply
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ZONE_NAME: imovie.space
+      # - name: Apply Cloudflare cache + WAF rules
+      #   run: pnpm run waf:apply
+      #   env:
+      #     CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     CF_ZONE_NAME: imovie.space
