@@ -29,7 +29,7 @@
 import process from 'node:process'
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN
-const ZONE_NAME = process.env.CF_ZONE_NAME || 'iMovie.space'
+const ZONE_NAME = process.env.CF_ZONE_NAME || 'https://imovie.watchin.workers.dev'
 const TAG = '[iMovie-waf]'
 
 if (!TOKEN) {
