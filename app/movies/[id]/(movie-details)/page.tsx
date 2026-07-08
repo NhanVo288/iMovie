@@ -2,7 +2,10 @@ import React from 'react'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import {
+  getAllTimeTopRatedMovies,
+  getLatestTrendingMovies,
   getMovieDetailsById,
+  getPopularMovies,
   populateMovieDetailsPage,
 } from '@/services/movies'
 
@@ -17,7 +20,41 @@ import {
 import { MoviesDetailsContent } from '@/components/media/details-content'
 import { MovieDetailsHero } from '@/components/media/details-hero'
 
-export const revalidate = 28800
+// 24h: movie metadata is essentially static and CI redeploys twice daily
+// (repopulating the cache with fresh data), so a shorter window would only
+// churn KV writes against the free-plan 1k/day cap for no freshness gain.
+export const revalidate = 86400
+
+// Pre-render the most popular movie pages at build time so they ship as static
+// assets (served by the ASSETS binding — zero Worker CPU, even on an edge-cache
+// miss). `dynamicParams` stays true, so any non-prebuilt id still renders on
+// demand and gets edge-cached. Fail-soft to [] so a TMDB hiccup at build never
+// breaks the deploy (empty list = current all-dynamic behaviour, no regression).
+export const dynamicParams = true
+
+export async function generateStaticParams() {
+  try {
+     // Prerender the head of the traffic distribution: popular (4 pages),
+    // all-time top rated, and today's trending. Deduped → ~100 hottest titles
+    // baked into the cache at build so they never cold-render at runtime.
+    const responses = await Promise.all([
+      getPopularMovies({ page: 1 }),
+      getPopularMovies({ page: 2 }),
+      getPopularMovies({ page: 3 }),
+      getPopularMovies({ page: 4 }),
+      getAllTimeTopRatedMovies({ page: 1 }),
+      getLatestTrendingMovies({ page: 1 }),
+    ])
+    const ids = new Set<string>()
+    for (const res of responses) {
+      for (const movie of res?.results ?? []) ids.add(String(movie.id))
+    }
+    return Array.from(ids, (id) => ({ id }))
+  } catch {
+    return []
+  }
+}
+
 
 export async function generateMetadata(
   props: PageDetailsProps
