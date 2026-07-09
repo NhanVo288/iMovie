@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
+
 import { MovieDetails } from '@/types/movie-details'
 import { SeriesDetails } from '@/types/series-details'
 import { useLocalStorage } from '@/hooks/use-local-storage'
+import { syncWatchStats } from '@/lib/person'
 import { useSearchQueryParams } from '@/hooks/use-search-params'
 import {
   trackWatchHistoryAdded,
@@ -19,6 +22,14 @@ interface WatchedMediaHookResult {
 export function useWatchedMedia(): WatchedMediaHookResult {
   const [watchedItems, setWatchedItems] = useLocalStorage('watchedItems', [])
   const { seasonQueryINT, episodeQueryINT } = useSearchQueryParams()
+
+  // Keep the PostHog person profile's behavioral stats in sync with the local
+  // watch history (fires on mount and on every add / update / clear).
+  useEffect(() => {
+    syncWatchStats(watchedItems)
+  }, [watchedItems])
+
+
   const deleteWatchedItems = () => {
     trackWatchHistoryCleared({ item_count: watchedItems.length })
     setWatchedItems([])
