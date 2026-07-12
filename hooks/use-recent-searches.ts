@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-const STORAGE_KEY = 'reely:recent-searches'
+const STORAGE_KEY = 'Imovie:recent-searches'
 const MAX_RECENT = 6
 
 // Module-level store so every palette instance shares one list and stays in
