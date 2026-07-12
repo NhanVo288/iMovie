@@ -9,6 +9,6 @@ export const getSeasonEpisodesAction = async (
   seasonNumber: string,
   params?: Param
 ) => {
-  const url = `tv/${seasonId}/season/${seasonNumber}?language=vi-VN`
+  const url = `tv/${seasonId}/season/${seasonNumber}?language=en-US`
   return fetchClient.get<SeasonDetails>(url, params, true)
 }

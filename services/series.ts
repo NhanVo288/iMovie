@@ -14,20 +14,20 @@ import { tvType } from '@/lib/tmdbConfig'
 import { pickTrailerKey } from '@/lib/videos'
 
 const getLatestTrendingSeries = async (params: Param = {}) => {
-  const url = `${tvType.trending}/tv/day?language=vi-VN`
+  const url = `${tvType.trending}/tv/day?language=en-US`
   const rawData = await fetchClient.get<SeriesResponse>(url, params, true)
   return seriesDTO(rawData)
 }
 
 const getPopularSeries = async (params: Param = {}) => {
   'use server'
-  const url = `tv/${tvType.popular}?language=vi-VN`
+  const url = `tv/${tvType.popular}?language=en-US`
   const rawData = await fetchClient.get<SeriesResponse>(url, params, true)
   return seriesDTO(rawData)
 }
 
 const getAllTimeTopRatedSeries = async (params: Param = {}) => {
-  const url = `tv/${tvType.top_rated}?language=vi-VN`
+  const url = `tv/${tvType.top_rated}?language=en-US`
   const rawData = await fetchClient.get<SeriesResponse>(url, params, true)
   return seriesDTO(rawData)
 }
@@ -42,7 +42,7 @@ const getAllTimeTopRatedSeries = async (params: Param = {}) => {
 const getSeriesWithExtras = cache(async (id: string, params: Param = {}) => {
   // `videos` rides along on the same append_to_response — still ONE TMDB
   // request / one KV write — and powers the "Watch Trailer" CTA.
-  const url = `tv/${id}?language=vi-VN&append_to_response=credits,similar,recommendations,videos,external_ids`
+  const url = `tv/${id}?language=en-US&append_to_response=credits,similar,recommendations,videos,external_ids`
   return fetchClient.get<SeriesDetailsWithExtras>(url, params, true)
 })
 

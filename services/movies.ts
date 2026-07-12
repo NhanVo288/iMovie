@@ -28,23 +28,23 @@ const getNowPlayingMovies = async (params: Param = {}) => {
 }
 
 const getLatestTrendingMovies = async (params: Param = {}) => {
-  const url = `${movieType.trending}/movie/day?language=vi-VN`
+  const url = `${movieType.trending}/movie/day?language=en-US`
   return fetchClient.get<MovieResponse>(url, params, true)
 }
 
 const getAllTimeTopRatedMovies = async (params: Param = {}) => {
-  const url = `movie/${movieType.top_rated}?language=vi-VN`
+  const url = `movie/${movieType.top_rated}?language=en-US`
   return fetchClient.get<MovieResponse>(url, params, true)
 }
 const getPopularMovies = async (params: Param = {}) => {
   'use server'
-  const url = `movie/${movieType.popular}?language=vi-VN`
+  const url = `movie/${movieType.popular}?language=en-US`
   return fetchClient.get<MediaResponse>(url, params, true)
 }
 
 // New function to get trending media (movies and TV shows) for the week
 const getTrendingAllWeek = async (page: number = 1, params: Param = {}) => {
-  const url = `trending/all/week?language=vi-VN&page=${page}`
+  const url = `trending/all/week?language=en-US&page=${page}`
   return fetchClient.get<MovieResponse>(url, params, true) // Assuming MovieResponse can handle mixed media types if structured similarly
 }
 
@@ -115,7 +115,7 @@ const populateHomePageData = async (): Promise<MultiRequestProps> => {
 const getMovieWithExtras = cache(async (id: string, params: Param = {}) => {
   // `videos` rides along on the same append_to_response — still ONE TMDB
   // request / one KV write — and powers the "Watch Trailer" CTA.
-  const url = `movie/${id}?language=vi-VN&append_to_response=credits,similar,recommendations,videos`
+  const url = `movie/${id}?language=en-US&append_to_response=credits,similar,recommendations,videos`
   return fetchClient.get<MovieDetailsWithExtras>(url, params, true)
 })
 

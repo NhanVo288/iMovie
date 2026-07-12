@@ -28,7 +28,7 @@ const getGenreList = cache(
   async (mediaType: ItemType): Promise<MovieGenre[]> => {
     try {
       const data = await fetchClient.get<GenreListResponse>(
-        `genre/${mediaType}/list?language=vi-VN`,
+        `genre/${mediaType}/list?language=en-US`,
         {},
         true,
         GENRE_REVALIDATE
