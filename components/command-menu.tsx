@@ -217,7 +217,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
           onValueChange={handleValueChange}
           isLoading={isLoading}
         />
-        <CommandList className="max-h-[65vh] sm:max-h-[460px]">
+        <CommandList className="max-h-[65vh] min-h-0 flex-1 sm:max-h-[460px] sm:flex-none">
           <CommandGroup heading={resultsHeading}>
             {status === 'idle' && (
               <div
@@ -437,7 +437,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
             >
               <div className="flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src="/hacker.png" />
+                  <AvatarImage src="/personal-logo.png" />
                   <AvatarFallback>G</AvatarFallback>
                 </Avatar>
                 Portfolio
@@ -448,7 +448,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
               onSelect={() => {
                 trackCommandShortcutUsed({ shortcut: 'buy_me_a_coffee' })
                 runCommand(() =>
-                  window.open(`https://github.com/NhanVo288`, '_blank')
+                  window.open(`https://buymeacoffee.com/vetteotp`, '_blank')
                 )
               }}
             >
