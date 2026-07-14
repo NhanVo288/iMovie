@@ -11,10 +11,15 @@
 //      defense is handled by the BLOCK_RULE + rate limit instead.
 //   5. Dynamic redirect: 301 apex (imovie.dpdns.org/*) → www.imovie.dpdns.org/*
 //      Needs Zone.Transform Rules: Edit on the API token.
-//   6. Cache rule: force /movies and /tv-shows paths to be CDN-eligible
-//      (Worker responses bypass cache by default). Needs Zone.Cache Rules.
+//   6. Cache rule: force /, /disclaimer, /movies and /tv-shows paths to be
+//      CDN-eligible (Worker responses bypass cache by default). This is what
+//      keeps the free-plan 10ms Worker CPU limit from being hit under traffic —
+//      an edge HIT never runs the Worker. Needs Zone.Cache Rules.
+//   7. Tiered Cache (free on all plans): edge misses consult an upper-tier data
+//      center before the origin Worker, so a cold render happens in a few tier
+//      colos instead of independently across all ~300 edge locations.
 //
-// Idempotent — managed rules are identified by description prefix "[iMovie-waf]"
+// Idempotent — managed rules are identified by description prefix "[reely-waf]"
 // and replaced on each run. Any other custom rules in the zone are preserved.
 //
 // Usage:
@@ -29,8 +34,8 @@
 import process from 'node:process'
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN
-const ZONE_NAME = process.env.CF_ZONE_NAME || 'https://imovie.dpdns.org'
-const TAG = '[iMovie-waf]'
+const ZONE_NAME = process.env.CF_ZONE_NAME || 'imovie.dpdns.org'
+const TAG = '[reely-waf]'
 
 if (!TOKEN) {
   console.error('Set CLOUDFLARE_API_TOKEN before running.')
@@ -67,7 +72,7 @@ async function getOrCreatePhaseEntrypoint(zoneId, phase) {
   return cf(`/zones/${zoneId}/rulesets`, {
     method: 'POST',
     body: JSON.stringify({
-      name: `iMovie-${phase}`,
+      name: `reely-${phase}`,
       kind: 'zone',
       phase,
       rules: [],
@@ -181,15 +186,15 @@ const RATELIMIT_RULE = {
   // Verified Bot — NOT query string or headers. That matters: Next.js App
   // Router <Link> prefetches detail pages (`/movies/[id]?_rsc=...`) as they
   // enter the viewport, and those hit the SAME path as real navigation, so we
-  // cannot exclude them. A content-dense grid can fire dozens of prefetches in
-  // one 10s window. The threshold therefore has to clear a normal browser's
-  // prefetch burst, not just human page-views: 100 req/10s (~600/min) sits well
-  // above any real scroll-and-browse session while still blocking bulk scrapers
-  // that hammer full HTML pages. Lower it only if you confirm prefetch is off.
+  // cannot exclude them. Card/watch-history links now use prefetch={false}
+  // (hover-only), which killed the on-load viewport storm — but nav + hover
+  // prefetch + real page-views still stack up. 300 req/10s (~1800/min) sits well
+  // above any real browse session while still blocking bulk scrapers that hammer
+  // full HTML pages. Was 100/10s; a homepage of carousels tripped it on load.
   ratelimit: {
     characteristics: ['ip.src', 'cf.colo.id'],
     period: 10,
-    requests_per_period: 100,
+    requests_per_period: 300,
     mitigation_timeout: 10,
   },
 }
@@ -209,20 +214,32 @@ const REDIRECT_APEX_RULE = {
   },
 }
 
+// The public, cacheable page paths. `/watch-history` is intentionally excluded
+// (personal + noindex). Keep in sync with next.config.mjs `headers()`.
+const CACHEABLE_PATHS =
+  '(http.request.uri.path eq "/") or (http.request.uri.path eq "/disclaimer") or (starts_with(http.request.uri.path, "/movies")) or (starts_with(http.request.uri.path, "/tv-shows"))'
+
+// Only full-document navigations/crawls are cached — NOT React Server Component
+// requests. App Router prefetch + client navigation send `RSC: 1`; those hit
+// the same URL as a real page load but return an RSC payload, not HTML. If both
+// shared a cache entry they'd collide (HTML served to an RSC fetch or vice
+// versa). Bypassing cache for RSC requests keeps one clean HTML entry per path;
+// RSC still renders on the Worker (cheap, and it's a fraction of traffic).
+const NOT_RSC = '(not any(http.request.headers["rsc"][*] == "1"))'
+
+const CACHEABLE_EXPR = `${NOT_RSC} and (${CACHEABLE_PATHS})`
+
 // Worker responses skip CF's edge cache by default; this rule overrides that
-// for the routes we want CDN-cached and pins the TTL ourselves.
-//
-// Why not `mode: 'respect_origin'`? The origin Cache-Control is correct, but
-// Next.js also emits `Vary: rsc, next-router-state-tree, next-router-prefetch,
-// next-router-segment-prefetch` for App Router client navigation. CF respects
-// Vary, so each value-combination of those headers would get a separate cache
-// entry — and prefetch traffic would fill the cache without ever HIT'ing on
-// real navigation. We pin the cache key to just method+host+path+device so
-// real Googlebot/user GETs collide on the same entry.
+// for the routes we want CDN-cached and pins the TTL ourselves. An edge HIT
+// never runs the Worker, so it's the single biggest defence against the
+// free-plan 10ms CPU limit. Works together with VARY_STRIP_RULE below — CF
+// won't cache a response carrying Next.js's `Vary: rsc,...` header, so that
+// header is stripped (in the response phase, before the cache stores) for these
+// same requests. Without the strip, this rule is a no-op (proven in prod:
+// responses returned no cf-cache-status at all).
 const CACHE_RULE = {
-  description: `${TAG} edge-cache detail pages, pin TTL + cache key`,
-  expression:
-    '(starts_with(http.request.uri.path, "/movies")) or (starts_with(http.request.uri.path, "/tv-shows"))',
+  description: `${TAG} edge-cache public document pages, pin TTL + cache key`,
+  expression: CACHEABLE_EXPR,
   action: 'set_cache_settings',
   action_parameters: {
     cache: true,
@@ -249,49 +266,117 @@ const CACHE_RULE = {
   },
 }
 
+// Next.js emits `Vary: rsc, next-router-state-tree, next-router-prefetch,
+// next-router-segment-prefetch, next-url` on every App Router page. Cloudflare
+// (free plan) treats any response with a Vary other than Accept-Encoding as
+// UNCACHEABLE, so CACHE_RULE above never actually cached anything. Response
+// header transform rules run before the response is written to cache (the same
+// reason removing Set-Cookie makes a response cacheable), so stripping Vary here
+// lets the edge cache the HTML. Scoped to the exact same document requests as
+// CACHE_RULE — RSC requests keep their Vary and are never cached, so no HTML/RSC
+// cache collision is possible. Needs Zone.Transform Rules: Edit (same token
+// scope the redirect rule already uses).
+const VARY_STRIP_RULE = {
+  description: `${TAG} strip Vary on cacheable pages so CF will edge-cache them`,
+  expression: CACHEABLE_EXPR,
+  action: 'rewrite',
+  action_parameters: {
+    headers: {
+      Vary: { operation: 'remove' },
+    },
+  },
+}
+
+// Each phase needs a DIFFERENT token permission, so a gap in one (e.g. Zone
+// WAF: Edit missing) must not block the others — above all it must not block the
+// edge-cache rule, which is the real defence against the 10ms Worker CPU limit.
+// step() isolates each phase: logs ✓/✗, records the failure, and keeps going.
+const failures = []
+async function step(label, fn) {
+  try {
+    await fn()
+    console.log(`✓ ${label}`)
+    return true
+  } catch (err) {
+    console.warn(`✗ ${label}\n    ${err.message}`)
+    failures.push(label)
+    return false
+  }
+}
+
 async function main() {
   const zones = await cf(`/zones?name=${encodeURIComponent(ZONE_NAME)}`)
   if (!zones.length) throw new Error(`Zone not found: ${ZONE_NAME}`)
   const zoneId = zones[0].id
   console.log(`Zone: ${ZONE_NAME} (${zoneId})`)
 
-  const customRs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_firewall_custom')
-  await putRuleset(zoneId, customRs, [ALLOW_RULE, BLOCK_RULE], { position: 'top' })
-  console.log('✓ Custom rules: allowlist + block-scrapers')
+  await step('Custom rules: allowlist + block-scrapers (needs Zone WAF: Edit)', async () => {
+    const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_firewall_custom')
+    await putRuleset(zoneId, rs, [ALLOW_RULE, BLOCK_RULE], { position: 'top' })
+  })
 
-  const redirectRs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_dynamic_redirect')
-  await putRuleset(zoneId, redirectRs, [REDIRECT_APEX_RULE], { position: 'top' })
-  console.log(`✓ Redirect rule: ${ZONE_NAME} → www.${ZONE_NAME}`)
+  await step(`Redirect ${ZONE_NAME} → www (needs Zone Transform Rules: Edit)`, async () => {
+    const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_dynamic_redirect')
+    await putRuleset(zoneId, rs, [REDIRECT_APEX_RULE], { position: 'top' })
+  })
 
-  const cacheRs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_cache_settings')
-  await putRuleset(zoneId, cacheRs, [CACHE_RULE], { position: 'top' })
-  console.log('✓ Cache rule: /movies, /tv-shows edge-cacheable (respect origin)')
+  // --- The edge cache: the actual CPU fix. Needs BOTH of the next two. ---
+  const cacheOk = await step(
+    'Cache rule: edge-cache /, /disclaimer, /movies, /tv-shows (needs Zone Cache Rules: Edit)',
+    async () => {
+      const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_request_cache_settings')
+      await putRuleset(zoneId, rs, [CACHE_RULE], { position: 'top' })
+    }
+  )
+  const varyOk = await step(
+    'Vary-strip: lets CF actually cache the HTML (needs Zone Transform Rules: Edit)',
+    async () => {
+      const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_response_headers_transform')
+      await putRuleset(zoneId, rs, [VARY_STRIP_RULE], { position: 'top' })
+    }
+  )
+
+  // Tiered Cache (free on all plans). Upper-tier colos absorb edge misses before
+  // they reach the origin Worker, so cold renders collapse from ~300 edge
+  // locations to a handful of tiers. Idempotent.
+  await step('Tiered Cache on (needs Zone Settings: Edit)', async () => {
+    await cf(`/zones/${zoneId}/argo/tiered_caching`, {
+      method: 'PATCH',
+      body: JSON.stringify({ value: 'on' }),
+    })
+  })
 
   // Free plan allows only 1 rate-limit rule. We replace any existing rule
-  // (e.g. the default "Leaked credential check") since iMovie has no auth.
-  const rlRs = await getOrCreatePhaseEntrypoint(zoneId, 'http_ratelimit')
-  await putRuleset(zoneId, rlRs, [RATELIMIT_RULE], { replaceAll: true })
-  console.log('✓ Rate limit: /movies/[id] and /tv-shows/[id]')
+  // (e.g. the default "Leaked credential check") since Reely has no auth.
+  await step('Rate limit: /movies/[id] and /tv-shows/[id] (needs Zone WAF: Edit)', async () => {
+    const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_ratelimit')
+    await putRuleset(zoneId, rs, [RATELIMIT_RULE], { replaceAll: true })
+  })
 
-  // Free-plan Bot Fight Mode is intentionally OFF. It is NOT compatible with the
-  // WAF skip action — it runs before the firewall_custom/sbfm phases, so the
-  // ALLOW_RULE above can't exempt verified bots from it. Left on, it serves the
-  // "Just a moment..." JS challenge to Googlebot/Bingbot and GSC's sitemap
-  // fetcher, which surfaces in Search Console as "Couldn't fetch". Obvious
-  // scrapers are still challenged by BLOCK_RULE and throttled by RATELIMIT_RULE.
-  try {
+  // Free-plan Bot Fight Mode is intentionally OFF — it runs before the WAF
+  // phases so ALLOW_RULE can't exempt Googlebot/GSC, and left on it serves the
+  // "Just a moment..." challenge that breaks sitemap fetching + indexing.
+  await step('Bot Fight Mode off (needs Zone Bot Management: Edit)', async () => {
     await cf(`/zones/${zoneId}/bot_management`, {
       method: 'PUT',
       body: JSON.stringify({ fight_mode: false }),
     })
-    console.log('✓ Bot Fight Mode disabled (would challenge Googlebot/GSC)')
-  } catch (err) {
-    console.warn(`! Bot Fight Mode toggle skipped: ${err.message}`)
-    console.warn('  Disable it manually at Security → Bots so Googlebot can crawl.')
-  }
+  })
 
-  console.log('\nDone. Verify at:')
-  console.log(`  https://dash.cloudflare.com/?to=/:account/${ZONE_NAME}/security/waf`)
+  // Green ONLY if edge caching is live (cache rule + Vary-strip both applied).
+  // Secondary rules (WAF, rate limit, redirect, bot mode) can be skipped without
+  // failing the run — they don't affect the CPU limit.
+  console.log('')
+  if (failures.length) {
+    console.warn(`Skipped ${failures.length} of the above (missing token perms) — see ✗ lines.\n`)
+  }
+  if (!(cacheOk && varyOk)) {
+    console.error('FAILED: edge cache NOT applied — the cache rule and/or Vary-strip above failed.')
+    console.error('Add BOTH to the token for imovie.dpdns.org: Zone · Cache Rules · Edit AND Zone · Transform Rules · Edit.')
+    process.exit(1)
+  }
+  console.log('✓ Edge cache is LIVE (cache rule + Vary-strip applied).')
+  console.log('  Verify: curl -sI https://www.imovie.dpdns.org/movies/278 | grep cf-cache-status')
 }
 
 main().catch((err) => {
