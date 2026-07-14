@@ -135,7 +135,7 @@ export const siteConfig = {
     buyMeACoffee: 'https://github.com/NhanVo288',
   },
   email: 'vnhan2808@gmail.com',
-  websiteURL: 'https://www.iMovie.space',
+  websiteURL: 'https://imovie.dpdns.org/',
   twitterTag: 'https://github.com/NhanVo288',
   image:
     'https://pbs.twimg.com/profile_images/1446549954231738370/IVkXC16N_400x400.jpg',

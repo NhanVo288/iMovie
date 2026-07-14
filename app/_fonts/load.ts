@@ -3,7 +3,7 @@
 // requests returning 503 (error 1102, CPU time exceeded) because fetching
 // Google Fonts CSS + woff2 on every render + Satori rasterization was tipping
 // over the worker CPU budget. WhatsApp scrapes once with no retry, so a single
-// 503 meant no preview when sharing iMovie.space.
+// 503 meant no preview when sharing imovie.dpdns.org.
 //
 // To regenerate after editing the OG_INTER_GLYPHS_* strings below:
 //   pnpm fonts:og
@@ -13,7 +13,7 @@ import { INTER_900_TTF_B64 } from './inter-900'
 
 export const OG_INTER_GLYPHS_900 = 'iMovie R'
 export const OG_INTER_GLYPHS_700 =
-  'Watch movies & TV shows. Free.Discover, track, and stream thousands of trending titles — no signup, no paywall.FREE TO STREAMiMovie.spaceMOVIESTV SHOWSTRENDINGMade bymohamedgado.com'
+  'Watch movies & TV shows. Free.Discover, track, and stream thousands of trending titles — no signup, no paywall.FREE TO STREAMimovie.dpdns.orgMOVIESTV SHOWSTRENDINGMade bymohamedgado.com'
 
 function decodeBase64(b64: string): ArrayBuffer {
   const bin = atob(b64)

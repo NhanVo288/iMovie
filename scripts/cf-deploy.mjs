@@ -18,8 +18,8 @@ import { resolve } from 'node:path'
 
 const CACHE_DIR = resolve('.open-next/cache')
 const CACHE_BAK = resolve('.open-next/cache.skip-populate')
-const SITE_HOST = 'www.imovie.space'
-const ZONE_NAME = 'imovie.space'
+const SITE_HOST = 'imovie.dpdns.org'
+const ZONE_NAME = 'imovie.dpdns.org'
 const INDEXNOW_KEY = 'fd71a860ed122d006df9ba7c2c529b88'
 
 function run(args) {

@@ -152,7 +152,7 @@ export async function buildOpenGraphImageInput() {
               textTransform: 'uppercase',
             }}
           >
-            iMovie.space
+            imovie.dpdns.org
           </div>
         </div>
 

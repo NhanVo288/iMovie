@@ -1,4 +1,4 @@
-// One-shot Cloudflare WAF setup for iMovie.space.
+// One-shot Cloudflare WAF setup for imovie.dpdns.org.
 //
 // What this configures (all free-plan features):
 //   1. Custom rule: allowlist social scrapers + search bots (skip later WAF/RL)
@@ -9,7 +9,7 @@
 //      phases and CANNOT be bypassed by the skip/allow rule below, so it
 //      challenges Googlebot/GSC and breaks sitemap fetching + indexing. Scraper
 //      defense is handled by the BLOCK_RULE + rate limit instead.
-//   5. Dynamic redirect: 301 apex (iMovie.space/*) → www.iMovie.space/*
+//   5. Dynamic redirect: 301 apex (imovie.dpdns.org/*) → www.imovie.dpdns.org/*
 //      Needs Zone.Transform Rules: Edit on the API token.
 //   6. Cache rule: force /movies and /tv-shows paths to be CDN-eligible
 //      (Worker responses bypass cache by default). Needs Zone.Cache Rules.
@@ -19,9 +19,9 @@
 //
 // Usage:
 //   CLOUDFLARE_API_TOKEN=<token> pnpm waf:apply
-//   CLOUDFLARE_API_TOKEN=<token> CF_ZONE_NAME=iMovie.space pnpm waf:apply
+//   CLOUDFLARE_API_TOKEN=<token> CF_ZONE_NAME=imovie.dpdns.org pnpm waf:apply
 //
-// Token needs these zone-level permissions on iMovie.space:
+// Token needs these zone-level permissions on imovie.dpdns.org:
 //   - Zone.Zone Settings: Edit
 //   - Zone.Zone WAF: Edit
 //   - Zone.Bot Management: Edit  (optional, for Bot Fight Mode toggle)
@@ -29,7 +29,7 @@
 import process from 'node:process'
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN
-const ZONE_NAME = process.env.CF_ZONE_NAME || 'https://imovie.watchin.workers.dev'
+const ZONE_NAME = process.env.CF_ZONE_NAME || 'https://imovie.dpdns.org'
 const TAG = '[iMovie-waf]'
 
 if (!TOKEN) {
