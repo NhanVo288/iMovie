@@ -100,6 +100,7 @@ export default async function TvGenrePage({ params }: GenrePageProps) {
           <Link
             key={g.id}
             href={`/tv-shows/genre/${g.slug}`}
+            prefetch={false}
             aria-current={g.slug === slug ? 'page' : undefined}
             className={cn(
               'rounded-full border px-3 py-1 text-sm transition-colors',
