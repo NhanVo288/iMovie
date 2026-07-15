@@ -27,7 +27,6 @@
     },
 
   ],
-  "workers_dev": true,
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
