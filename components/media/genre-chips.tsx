@@ -47,7 +47,6 @@ export function GenreChips({ genres, mediaType, className }: GenreChipsProps) {
             <li key={genre.id}>
               <Link
                 href={`${basePath}/${match.slug}`}
-                prefetch={false}
                 aria-label={`Browse ${genre.name} ${noun}`}
                 className="group border-border/70 text-muted-foreground hover:border-primary/50 hover:bg-primary/5 hover:text-foreground focus-visible:ring-primary/50 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:outline-none lg:text-sm"
               >
