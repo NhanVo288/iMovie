@@ -106,7 +106,7 @@ export default async function MovieGenrePage({ params }: GenrePageProps) {
           <Link
             key={g.id}
             href={`/movies/genre/${g.slug}`}
-            prefetch={false}
+            // prefetch={false}
             aria-current={g.slug === slug ? 'page' : undefined}
             className={cn(
               'rounded-full border px-3 py-1 text-sm transition-colors',
