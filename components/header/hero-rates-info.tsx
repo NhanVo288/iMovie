@@ -75,6 +75,7 @@ export const HeroRatesInfos = ({
         <Link
           key={genre.id}
           href={`${genreBasePath}/genre/${genreToSlug(genre.name)}`}
+          prefetch={false}
         >
           <Badge className="hover:bg-primary/80 font-medium transition-colors">
             {genre.name}
