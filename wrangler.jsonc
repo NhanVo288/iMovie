@@ -14,14 +14,11 @@
       "enabled": true,
       "invocation_logs": true
     },
-    "traces": {
-      "enabled": false
-    }
   },
   "preview_urls": false,
-  "placement": {
-  	"mode": "smart",
-  },
+  // "placement": {
+  // 	"mode": "smart",
+  // },
   "routes": [
     {
       "pattern": "imovie.dpdns.org",
@@ -38,7 +35,7 @@
     },
   ],
   // Preserve vars configured in the Cloudflare Dashboard on deploy
-  "keep_vars": false,
+  "keep_vars": true,
   "vars": {
     "ENVIRONMENT": "production",
     "NODE_ENV": "production",
