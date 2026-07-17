@@ -546,7 +546,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
             >
               <div className="flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src="/personal-logo.png" />
+                  <AvatarImage src="/hacker.png" />
                   <AvatarFallback>G</AvatarFallback>
                 </Avatar>
                 Portfolio
