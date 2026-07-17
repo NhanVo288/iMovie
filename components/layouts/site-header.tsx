@@ -45,6 +45,21 @@ export function SiteHeader() {
                 <span className="sr-only">GitHub</span>
               </div>
             </Link>
+            <Link
+              href={siteConfig.author.website}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <div
+                className={buttonVariants({
+                  size: 'icon',
+                  variant: 'ghost',
+                })}
+              >
+                <Icons.portfolio className="size-5" />
+                <span className="sr-only">Portfolio</span>
+              </div>
+            </Link>
           </nav>
         </div>
       </div>

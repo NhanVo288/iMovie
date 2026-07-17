@@ -8,7 +8,7 @@ export const siteConfig = {
   author: {
     name: 'NhanVo',
     email: 'vnhan2808@gmail.com',
-    website: 'https://github.com/NhanVo288/',
+    website: 'https://vohuunhan.dpdns.org',
     twitter: 'https://github.com/NhanVo288',
   },
 
@@ -131,7 +131,7 @@ export const siteConfig = {
   links: {
     twitter: 'https://github.com/NhanVo288',
     github: 'https://github.com/NhanVo288',
-    website: 'https://github.com/NhanVo288/',
+    website: 'https://vohuunhan.dpdns.org',
     buyMeACoffee: 'https://github.com/NhanVo288',
   },
   email: 'vnhan2808@gmail.com',
