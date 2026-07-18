@@ -17,6 +17,7 @@ import {
   trackSearchResultClicked,
 } from '@/lib/analytics'
 import { SEARCH_DEBOUNCE } from '@/lib/constants'
+import { getTMDBOriginFallback } from '@/lib/tmdbConfig'
 import { cn, getThumbBackdropURL, getThumbPosterURL } from '@/lib/utils'
 import { useCMDKListener } from '@/hooks/use-cmdk-listener'
 import { useRecentSearches } from '@/hooks/use-recent-searches'
@@ -422,6 +423,13 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
                             sizes="96px"
                             className="object-cover"
                             unoptimized
+                            onError={(e) => {
+                              const fb = getTMDBOriginFallback(
+                                e.currentTarget.src
+                              )
+                              if (fb && e.currentTarget.src !== fb)
+                                e.currentTarget.src = fb
+                            }}
                           />
                         </div>
                       ) : movie?.poster_path ? (
@@ -433,6 +441,13 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
                             sizes="96px"
                             className="object-cover object-top"
                             unoptimized
+                            onError={(e) => {
+                              const fb = getTMDBOriginFallback(
+                                e.currentTarget.src
+                              )
+                              if (fb && e.currentTarget.src !== fb)
+                                e.currentTarget.src = fb
+                            }}
                           />
                         </div>
                       ) : (
@@ -550,20 +565,6 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
                   <AvatarFallback>G</AvatarFallback>
                 </Avatar>
                 Portfolio
-              </div>
-            </CommandItem>
-            <CommandItem
-              className="cursor-pointer"
-              onSelect={() => {
-                trackCommandShortcutUsed({ shortcut: 'buy_me_a_coffee' })
-                runCommand(() =>
-                  window.open(`https://buymeacoffee.com/vetteotp`, '_blank')
-                )
-              }}
-            >
-              <div className="flex items-center gap-4">
-                <Icons.buyMeACoffee className="size-5" />
-                Buy me a coffee
               </div>
             </CommandItem>
           </CommandGroup>
