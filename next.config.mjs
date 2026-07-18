@@ -15,6 +15,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'image.tmdb.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'wsrv.nl',
+      },
     ],
   },
   typescript: { ignoreBuildErrors: false },
@@ -29,15 +33,8 @@ const nextConfig = {
   // must stay in sync with the CDN cache rule in scripts/cf-waf-setup.mjs.
   // `/watch-history` is intentionally omitted — it's personal + noindex.
   async headers() {
-    const edgeCache =
-      'public, max-age=0, s-maxage=28800, stale-while-revalidate=86400'
-    const cachedPaths = [
-      '/',
-      '/movies',
-      '/tv-shows',
-      '/movies/:id',
-      '/tv-shows/:id',
-    ]
+    const edgeCache = 'public, max-age=0, s-maxage=28800, stale-while-revalidate=86400'
+    const cachedPaths = ['/', '/movies', '/tv-shows', '/movies/:id', '/tv-shows/:id']
     return cachedPaths.map((source) => ({
       source,
       headers: [{ key: 'Cache-Control', value: edgeCache }],

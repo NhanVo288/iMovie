@@ -17,7 +17,7 @@ import {
   trackSearchResultClicked,
 } from '@/lib/analytics'
 import { SEARCH_DEBOUNCE } from '@/lib/constants'
-import { getTMDBOriginFallback } from '@/lib/tmdbConfig'
+import { getNextImageFallback } from '@/lib/tmdbConfig'
 import { cn, getThumbBackdropURL, getThumbPosterURL } from '@/lib/utils'
 import { useCMDKListener } from '@/hooks/use-cmdk-listener'
 import { useRecentSearches } from '@/hooks/use-recent-searches'
@@ -424,7 +424,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
                             className="object-cover"
                             unoptimized
                             onError={(e) => {
-                              const fb = getTMDBOriginFallback(
+                              const fb = getNextImageFallback(
                                 e.currentTarget.src
                               )
                               if (fb && e.currentTarget.src !== fb)
@@ -442,7 +442,7 @@ export function CommandMenu({ ...props }: CommandDialogProps) {
                             className="object-cover object-top"
                             unoptimized
                             onError={(e) => {
-                              const fb = getTMDBOriginFallback(
+                              const fb = getNextImageFallback(
                                 e.currentTarget.src
                               )
                               if (fb && e.currentTarget.src !== fb)
