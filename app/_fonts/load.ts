@@ -13,7 +13,7 @@ import { INTER_900_TTF_B64 } from './inter-900'
 
 export const OG_INTER_GLYPHS_900 = 'iMovie R'
 export const OG_INTER_GLYPHS_700 =
-  'Watch movies & TV shows. Free.Discover, track, and stream thousands of trending titles — no signup, no paywall.FREE TO STREAMimovie.dpdns.orgMOVIESTV SHOWSTRENDINGMade bymohamedgado.com'
+  'Watch movies & TV shows. Free.Discover, track, and stream thousands of trending titles — no signup, no paywall.FREE TO STREAMimovie.dpdns.orgMOVIESTV SHOWSTRENDINGMade bynhan'
 
 function decodeBase64(b64: string): ArrayBuffer {
   const bin = atob(b64)

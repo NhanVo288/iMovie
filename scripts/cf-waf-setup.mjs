@@ -19,7 +19,7 @@
 //      center before the origin Worker, so a cold render happens in a few tier
 //      colos instead of independently across all ~300 edge locations.
 //
-// Idempotent — managed rules are identified by description prefix "[reely-waf]"
+// Idempotent — managed rules are identified by description prefix "[imovie-waf]"
 // and replaced on each run. Any other custom rules in the zone are preserved.
 //
 // Usage:
@@ -35,7 +35,7 @@ import process from 'node:process'
 
 const TOKEN = process.env.CLOUDFLARE_API_TOKEN
 const ZONE_NAME = process.env.CF_ZONE_NAME || 'imovie.dpdns.org'
-const TAG = '[reely-waf]'
+const TAG = '[imovie-waf]'
 
 if (!TOKEN) {
   console.error('Set CLOUDFLARE_API_TOKEN before running.')
@@ -72,7 +72,7 @@ async function getOrCreatePhaseEntrypoint(zoneId, phase) {
   return cf(`/zones/${zoneId}/rulesets`, {
     method: 'POST',
     body: JSON.stringify({
-      name: `reely-${phase}`,
+      name: `imovie-${phase}`,
       kind: 'zone',
       phase,
       rules: [],
@@ -347,7 +347,7 @@ async function main() {
   })
 
   // Free plan allows only 1 rate-limit rule. We replace any existing rule
-  // (e.g. the default "Leaked credential check") since Reely has no auth.
+  // (e.g. the default "Leaked credential check") since imovie has no auth.
   await step('Rate limit: /movies/[id] and /tv-shows/[id] (needs Zone WAF: Edit)', async () => {
     const rs = await getOrCreatePhaseEntrypoint(zoneId, 'http_ratelimit')
     await putRuleset(zoneId, rs, [RATELIMIT_RULE], { replaceAll: true })

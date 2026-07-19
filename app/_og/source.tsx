@@ -308,7 +308,7 @@ export async function buildOpenGraphImageInput() {
                 marginLeft: 8,
               }}
             >
-              mohamedgado.com
+              nhan
             </div>
           </div>
 

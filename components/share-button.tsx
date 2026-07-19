@@ -24,8 +24,8 @@ export function ShareButton({
   const handleShare = async () => {
     const url = typeof window !== 'undefined' ? window.location.href : ''
     const shareData = {
-      title: title || 'Reely',
-      text: title ? `Watch “${title}” on Reely` : 'Check this out on Reely',
+      title: title || 'imovie',
+      text: title ? `Watch “${title}” on imovie` : 'Check this out on imovie',
       url,
     }
 
