@@ -43,6 +43,12 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'imovie.dpdns.org' }],
+        destination: 'https://imovie.dpdns.org/:path*',
+        permanent: true,
+      },
+      {
         source: '/sitemap-movies.xml',
         destination: '/sitemap.xml',
         permanent: true,
