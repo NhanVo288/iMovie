@@ -17,8 +17,13 @@ import {
 import { cn } from '@/lib/utils'
 import { GenreMediaGrid } from '@/components/media/genre-media-grid'
 
-export const revalidate = 28800
-export const dynamicParams = true
+// Fully static: the genre set is finite and fixed, so all slugs are prebuilt
+// below and served from static assets — never rendered on the Worker (no
+// free-plan subrequest/CPU caps). revalidate=false → refreshed by the 4x/day CI
+// deploy. dynamicParams=false → any non-genre slug 404s at the edge instead of
+// cold-rendering (findMovieGenreBySlug would notFound() it anyway).
+export const revalidate = false
+export const dynamicParams = false
 
 export function generateStaticParams() {
   return MOVIE_GENRES_WITH_SLUG.map((genre) => ({ slug: genre.slug }))
@@ -36,14 +41,14 @@ export async function generateMetadata({
   if (!genre) return {}
 
   const title = `${genre.name} Movies`
-  const description = `Watch the most popular ${genre.name.toLowerCase()} movies. Browse top ${genre.name.toLowerCase()} films and find your next watch on Imovie.`
+  const description = `Watch the most popular ${genre.name.toLowerCase()} movies. Browse top ${genre.name.toLowerCase()} films and find your next watch on iMovie.`
 
   return {
     title,
     description,
     alternates: { canonical: `/movies/genre/${slug}` },
     openGraph: {
-      title: `${title} — Imovie`,
+      title: `${title} — iMovie`,
       description,
       url: `${siteConfig.websiteURL}/movies/genre/${slug}`,
       type: 'website',
