@@ -70,7 +70,7 @@ jobs:
           NEXT_PUBLIC_IMAGE_CACHE_HOST_URL: ${{ secrets.NEXT_PUBLIC_IMAGE_CACHE_HOST_URL }}
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
-
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
       # Re-apply the edge-cache + WAF rules on every deploy so they can't silently
       # drift off (they were never wired in before, so prod ran with NO edge cache
       # — every request hit the Worker and burned the free-plan 10ms CPU budget).
