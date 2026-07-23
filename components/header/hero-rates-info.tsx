@@ -69,6 +69,7 @@ export const HeroRatesInfos = ({
         <Link
           key={genre.id}
           href={`${genreBasePath}/genre/${genreToSlug(genre.name)}`}
+          prefetch={false}
           className={chipVariants({ variant: 'neutral', interactive: true })}
         >
           {genre.name}
